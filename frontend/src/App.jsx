@@ -12,11 +12,17 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
 import PreferencesModal from './components/PreferencesModal';
 import TrafficAlerts from './components/TrafficAlerts';
+import AuthButton from './components/AuthButton';
+import { useAuth } from './contexts/AuthContext';
+import { saveUserPreferences, loadUserPreferences, saveLastCity, getLastCity } from './services/firestoreService';
 
 // API URL - use environment variable or fallback to local
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function App() {
+  // Auth state
+  const { user, isAuthenticated } = useAuth();
+  
   // State management
   const [city, setCity] = useState('');
   const [profile, setProfile] = useState('standard');
@@ -26,22 +32,88 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'synced', 'error'
 
-  // Load preferences on mount
+  // Load preferences on mount or when user changes
   useEffect(() => {
-    const saved = localStorage.getItem('daymate_preferences');
-    if (saved) {
-      try {
-        setPreferences(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse preferences', e);
+    const loadPreferences = async () => {
+      if (isAuthenticated && user) {
+        // Load from Firestore for authenticated users
+        setSyncStatus('syncing');
+        try {
+          const cloudPrefs = await loadUserPreferences(user.uid);
+          if (cloudPrefs) {
+            setPreferences(cloudPrefs);
+            // Also update localStorage as backup
+            localStorage.setItem('daymate_preferences', JSON.stringify(cloudPrefs));
+          } else {
+            // No cloud prefs, check localStorage and sync up
+            const localPrefs = localStorage.getItem('daymate_preferences');
+            if (localPrefs) {
+              const parsed = JSON.parse(localPrefs);
+              setPreferences(parsed);
+              // Sync local prefs to cloud (don't await - do it in background)
+              saveUserPreferences(user.uid, parsed).catch(console.error);
+            }
+          }
+          
+          // Load last city (don't block on this)
+          getLastCity(user.uid).then(lastCity => {
+            if (lastCity) {
+              setCity(prevCity => prevCity || lastCity);
+            }
+          }).catch(console.error);
+          
+          setSyncStatus('synced');
+          // Auto-hide after 2 seconds
+          setTimeout(() => setSyncStatus(null), 2000);
+        } catch (e) {
+          console.error('Failed to load preferences from cloud', e);
+          setSyncStatus('error');
+          setTimeout(() => setSyncStatus(null), 3000);
+          // Fallback to localStorage
+          const saved = localStorage.getItem('daymate_preferences');
+          if (saved) {
+            setPreferences(JSON.parse(saved));
+          }
+        }
+      } else {
+        // Not authenticated, use localStorage
+        const saved = localStorage.getItem('daymate_preferences');
+        if (saved) {
+          try {
+            setPreferences(JSON.parse(saved));
+          } catch (e) {
+            console.error('Failed to parse preferences', e);
+          }
+        }
+        setSyncStatus(null);
       }
-    }
-  }, []);
+    };
 
-  const handleSavePreferences = (newPrefs) => {
+    loadPreferences();
+  }, [isAuthenticated, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  const handleSavePreferences = async (newPrefs) => {
     setPreferences(newPrefs);
     localStorage.setItem('daymate_preferences', JSON.stringify(newPrefs));
+    
+    // Sync to cloud if authenticated
+    if (isAuthenticated && user) {
+      setSyncStatus('syncing');
+      try {
+        const success = await saveUserPreferences(user.uid, newPrefs);
+        setSyncStatus(success ? 'synced' : 'error');
+        // Auto-hide synced status after 3 seconds
+        if (success) {
+          setTimeout(() => setSyncStatus(null), 3000);
+        }
+      } catch (e) {
+        console.error('Failed to save preferences:', e);
+        setSyncStatus('error');
+      }
+    }
   };
 
   // Popular cities for quick selection
@@ -77,6 +149,11 @@ function App() {
       });
 
       setPlanData(response.data);
+      
+      // Save last city for authenticated users
+      if (isAuthenticated && user && response.data.city) {
+        saveLastCity(user.uid, response.data.city);
+      }
     } catch (err) {
       console.error('Error fetching plan:', err);
       
@@ -174,17 +251,52 @@ function App() {
               </p>
             </div>
           </div>
-          {planData && (
-            <button
-              onClick={handleReset}
-              className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-pink-600 bg-white/50 hover:bg-pink-50 rounded-lg transition-all duration-200 border border-slate-200/50"
-            >
-              <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Plan another city
-            </button>
-          )}
+          
+          {/* Right side - Auth and Reset */}
+          <div className="flex items-center gap-3">
+            {/* Sync Status Indicator */}
+            {isAuthenticated && syncStatus && (
+              <div className={`flex items-center gap-1.5 text-xs font-medium ${
+                syncStatus === 'synced' ? 'text-green-600' : 
+                syncStatus === 'syncing' ? 'text-amber-600' : 'text-red-500'
+              }`}>
+                {syncStatus === 'syncing' && (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                )}
+                {syncStatus === 'synced' && (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {syncStatus === 'error' && (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">
+                  {syncStatus === 'synced' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Sync error'}
+                </span>
+              </div>
+            )}
+            
+            {planData && (
+              <button
+                onClick={handleReset}
+                className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-pink-600 bg-white/50 hover:bg-pink-50 rounded-lg transition-all duration-200 border border-slate-200/50"
+              >
+                <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="hidden sm:inline">Plan another city</span>
+              </button>
+            )}
+            
+            {/* Auth Button */}
+            <AuthButton />
+          </div>
         </div>
       </header>
 

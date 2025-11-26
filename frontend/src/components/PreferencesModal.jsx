@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
+  const { isAuthenticated, user } = useAuth();
   const [preferences, setPreferences] = useState({
     name: '',
     travel_mode: 'any',
@@ -40,12 +42,17 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
       <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl shadow-pink-500/10 max-w-lg w-full p-8 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar border border-white/50">
-        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white/95 z-10 pb-4 border-b border-slate-100">
-          <div>
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-pink-600">Personalize Your Day</h2>
-            <p className="text-sm text-slate-500">Tell us what you like</p>
+        <div className="flex justify-between items-start mb-8 sticky top-0 bg-white/95 z-10 pb-4 border-b border-pink-100">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 via-pink-500 to-orange-400 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/30">
+              <span className="text-2xl">✨</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500">Your Preferences</h2>
+              <p className="text-sm text-slate-500">Help AI understand you better</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-pink-50 text-slate-400 hover:text-pink-600 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-pink-50 text-slate-400 hover:text-pink-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -208,6 +215,25 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
           </div>
 
           <div className="pt-6 border-t border-slate-100">
+            {/* Sync indicator for authenticated users */}
+            {isAuthenticated && (
+              <div className="mb-4 flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 py-2 px-4 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                </svg>
+                <span>Synced to cloud as {user?.displayName || user?.email}</span>
+              </div>
+            )}
+            
+            {!isAuthenticated && (
+              <div className="mb-4 flex items-center justify-center gap-2 text-sm text-amber-600 bg-amber-50 py-2 px-4 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Sign in to sync preferences across devices</span>
+              </div>
+            )}
+            
             <button
               type="submit"
               className="w-full py-4 bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500 text-white font-bold rounded-xl hover:from-violet-700 hover:via-pink-700 hover:to-orange-600 transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transform hover:-translate-y-0.5"
