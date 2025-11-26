@@ -185,17 +185,17 @@ function PlanDisplay({ plan, city, weather, news, error }) {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Main Plan Card */}
-      <div className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl shadow-pink-500/10 border border-white/50 relative overflow-hidden">
         {/* Decorative background blob */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br from-violet-200 to-pink-200 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
         
         <div className="flex justify-between items-center mb-8 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-2xl">
+            <div className="p-3 bg-gradient-to-br from-violet-500 to-pink-500 rounded-2xl shadow-lg shadow-pink-500/30">
               <span className="text-3xl">✨</span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Your Day in {city}</h2>
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-pink-600">Your Day in {city}</h2>
               <p className="text-slate-500">Personalized itinerary</p>
             </div>
           </div>
@@ -205,7 +205,7 @@ function PlanDisplay({ plan, city, weather, news, error }) {
             className={`p-3 rounded-xl transition-all ${
               isSpeaking 
                 ? 'bg-red-50 text-red-600 animate-pulse ring-2 ring-red-100' 
-                : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                : 'bg-violet-50 text-violet-600 hover:bg-pink-50 hover:text-pink-600'
             }`}
             title={isSpeaking ? "Stop reading" : "Read aloud"}
           >
@@ -223,8 +223,8 @@ function PlanDisplay({ plan, city, weather, news, error }) {
 
         {/* Error notice */}
         {error && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-            <p className="text-sm text-blue-700">
+          <div className="bg-pink-50 border border-pink-200 rounded-xl p-4 mb-6">
+            <p className="text-sm text-pink-700">
               <span className="font-bold">Note:</span> {error}
             </p>
           </div>
@@ -236,13 +236,13 @@ function PlanDisplay({ plan, city, weather, news, error }) {
       </div>
 
       {/* Chat Interface */}
-      <div className="bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg shadow-pink-500/10 border border-white/50">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-purple-50 rounded-xl">
+          <div className="p-2 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl shadow-lg shadow-pink-500/20">
             <span className="text-2xl">💬</span>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Chat with DayMate</h3>
+            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-orange-500">Chat with DayMate</h3>
             <p className="text-sm text-slate-500">Ask for changes or more details</p>
           </div>
         </div>
@@ -256,7 +256,7 @@ function PlanDisplay({ plan, city, weather, news, error }) {
               <div 
                 className={`max-w-[80%] p-4 rounded-2xl ${
                   msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-500/20' 
+                    ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-tr-none shadow-md shadow-pink-500/20' 
                     : 'bg-slate-100 text-slate-700 rounded-tl-none'
                 }`}
               >
@@ -283,14 +283,14 @@ function PlanDisplay({ plan, city, weather, news, error }) {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="e.g., 'Find a cheaper lunch place' or 'Add a museum visit'"
-            className="w-full p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-inner"
+            className="w-full p-4 pr-24 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
           />
           <div className="absolute right-2 top-2 flex gap-1">
             <button
               type="button"
               onClick={handleListen}
               className={`p-2 rounded-lg transition-colors ${
-                isListening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                isListening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-pink-600 hover:bg-pink-50'
               }`}
               title="Voice input"
             >
@@ -301,7 +301,7 @@ function PlanDisplay({ plan, city, weather, news, error }) {
             <button
               type="submit"
               disabled={!chatInput.trim() || chatLoading}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
+              className="p-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-lg hover:from-violet-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-pink-500/20"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -312,8 +312,8 @@ function PlanDisplay({ plan, city, weather, news, error }) {
       </div>
       
       {/* Footer */}
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <p className="text-xs text-gray-400 flex items-center gap-1">
+      <div className="mt-6 pt-4 border-t border-pink-100">
+        <p className="text-xs text-slate-500 flex items-center gap-1">
           <span>🎯</span>
           <span>Personalized based on real-time weather &amp; local news</span>
         </p>

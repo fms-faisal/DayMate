@@ -18,12 +18,12 @@ function NewsFeed({ news, error }) {
   // Show error/empty state
   if (!news || news.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-100 h-full">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg shadow-pink-500/10 border border-white/50 h-full">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-green-50 rounded-xl">
+          <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-md shadow-pink-500/20">
             <span className="text-2xl">📰</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-800">Local Headlines</h2>
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-rose-600">Local Headlines</h2>
         </div>
         
         {error && (
@@ -35,7 +35,7 @@ function NewsFeed({ news, error }) {
         )}
         
         <div className="text-center py-8">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl opacity-50">📭</span>
           </div>
           <p className="text-slate-500">
@@ -47,14 +47,14 @@ function NewsFeed({ news, error }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg shadow-pink-500/10 border border-white/50 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-green-50 rounded-xl">
+        <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-md shadow-pink-500/20">
           <span className="text-2xl">📰</span>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Local Headlines</h2>
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-rose-600">Local Headlines</h2>
           <p className="text-sm text-slate-500">Latest updates from the area</p>
         </div>
       </div>
@@ -75,18 +75,18 @@ function NewsFeed({ news, error }) {
                 href={article.url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group block p-4 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100"
+                className="group block p-4 rounded-xl hover:bg-pink-50/50 transition-all border border-transparent hover:border-pink-100"
               >
-                <h3 className="text-slate-800 font-semibold group-hover:text-blue-600 transition-colors line-clamp-2 mb-2 leading-snug">
+                <h3 className="text-slate-800 font-semibold group-hover:text-pink-600 transition-colors line-clamp-2 mb-2 leading-snug">
                   {article.title}
                 </h3>
                 <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                  <span className="font-medium text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
                     {article.source}
                   </span>
                   {article.published_at && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                      <span className="w-1 h-1 rounded-full bg-pink-300"></span>
                       <span>{formatDate(article.published_at)}</span>
                     </>
                   )}

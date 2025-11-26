@@ -38,14 +38,14 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white z-10 pb-4 border-b border-slate-100">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all">
+      <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl shadow-pink-500/10 max-w-lg w-full p-8 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar border border-white/50">
+        <div className="flex justify-between items-center mb-8 sticky top-0 bg-white/95 z-10 pb-4 border-b border-slate-100">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Personalize Your Day</h2>
+            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-pink-600">Personalize Your Day</h2>
             <p className="text-sm text-slate-500">Tell us what you like</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-pink-50 text-slate-400 hover:text-pink-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -62,7 +62,7 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
               value={preferences.name || ''}
               onChange={handleChange}
               placeholder="What should we call you?"
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
             />
           </div>
 
@@ -74,14 +74,14 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                 name="travel_mode"
                 value={preferences.travel_mode}
                 onChange={handleChange}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all"
+                className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent appearance-none transition-all"
               >
                 <option value="any">Any / No Preference</option>
                 <option value="walking">Walking Friendly</option>
                 <option value="public_transport">Public Transport</option>
                 <option value="driving">Driving</option>
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-pink-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -98,7 +98,7 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
               value={preferences.food_preference}
               onChange={handleChange}
               placeholder="e.g., Vegetarian, Italian, Spicy..."
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
             />
           </div>
 
@@ -110,7 +110,7 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                 name="activity_type"
                 value={preferences.activity_type}
                 onChange={handleChange}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all"
+                className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent appearance-none transition-all"
               >
                 <option value="mixed">Mixed (Best of everything)</option>
                 <option value="outdoor">Outdoor & Nature</option>
@@ -118,7 +118,7 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                 <option value="shopping">Shopping & Lifestyle</option>
                 <option value="cultural">Cultural & Historical</option>
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-pink-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -137,8 +137,8 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                   onClick={() => handleChange({ target: { name: 'pace', value: p } })}
                   className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
                     preferences.pace === p
-                      ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white border-transparent shadow-md'
+                      : 'bg-white border-violet-200 text-slate-600 hover:bg-violet-50'
                   }`}
                 >
                   {p.charAt(0).toUpperCase() + p.slice(1)}
@@ -162,8 +162,8 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                   onClick={() => handleChange({ target: { name: 'budget', value: b.val } })}
                   className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
                     preferences.budget === b.val
-                      ? 'bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-transparent shadow-md'
+                      : 'bg-white border-pink-200 text-slate-600 hover:bg-pink-50'
                   }`}
                 >
                   {b.label}
@@ -180,14 +180,14 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
                 name="companions"
                 value={preferences.companions || 'solo'}
                 onChange={handleChange}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all"
+                className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent appearance-none transition-all"
               >
                 <option value="solo">Just Me (Solo)</option>
                 <option value="couple">Couple / Date</option>
                 <option value="family">Family with Kids</option>
                 <option value="friends">Group of Friends</option>
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-pink-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -203,16 +203,16 @@ const PreferencesModal = ({ isOpen, onClose, onSave, initialPreferences }) => {
               value={preferences.interests || ''}
               onChange={handleChange}
               placeholder="e.g., Morning workout, 9-5 office hours, love art galleries..."
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32 resize-none transition-all"
+              className="w-full p-4 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent h-32 resize-none transition-all"
             />
           </div>
 
           <div className="pt-6 border-t border-slate-100">
             <button
               type="submit"
-              className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5"
+              className="w-full py-4 bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500 text-white font-bold rounded-xl hover:from-violet-700 hover:via-pink-700 hover:to-orange-600 transition-all shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 transform hover:-translate-y-0.5"
             >
-              Save Preferences
+              Save Preferences ✨
             </button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,26 @@
 
 /* Base styles */
 body {
-  font-family: "Inter", system-ui, sans-serif;
-  background-color: #f3f4f6;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  background: linear-gradient(135deg, #fdf4ff 0%, #faf5ff 25%, #f0f9ff 50%, #ecfeff 75%, #f0fdf4 100%);
+  background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* Animated gradient background */
+@keyframes gradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
 }
 
 /* Custom scrollbar */
@@ -75,12 +92,41 @@ body {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Gradient text */
+/* Gradient text - Vibrant sunset palette */
 .gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Hero gradient text */
+.hero-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 30%, #ec4899 60%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% auto;
+  animation: textShine 3s linear infinite;
+}
+
+@keyframes textShine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Glow effects */
+.glow-pink {
+  box-shadow: 0 0 40px rgba(236, 72, 153, 0.3), 0 0 80px rgba(236, 72, 153, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.3), 0 0 80px rgba(168, 85, 247, 0.1);
+}
+
+.glow-orange {
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.3), 0 0 80px rgba(249, 115, 22, 0.1);
 }
 
 /* Plan text formatting */
