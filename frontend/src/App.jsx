@@ -11,6 +11,7 @@ import PlanDisplay from './components/PlanDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
 import PreferencesModal from './components/PreferencesModal';
+import TrafficAlerts from './components/TrafficAlerts';
 
 // API URL - use environment variable or fallback to local
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -326,18 +327,19 @@ function App() {
             )}
 
             {/* Features Section */}
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-4 gap-6">
               {[
                 { icon: '🌡️', title: 'Real-time Weather', desc: 'Accurate forecasts for your day', gradient: 'from-violet-500 to-purple-600' },
-                { icon: '📰', title: 'Local News', desc: 'Stay updated with local events', gradient: 'from-pink-500 to-rose-500' },
+                { icon: '�', title: 'Traffic Alerts', desc: 'Stay safe with live updates', gradient: 'from-red-500 to-rose-500' },
+                { icon: '�📰', title: 'Local News', desc: 'Stay updated with local events', gradient: 'from-pink-500 to-rose-500' },
                 { icon: '🤖', title: 'AI Recommendations', desc: 'Smart, personalized itinerary', gradient: 'from-orange-400 to-amber-500' }
               ].map((feature, idx) => (
-                <div key={idx} className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg shadow-slate-200/50 border border-white/50 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 text-center group hover:-translate-y-1">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                    <span className="text-3xl">{feature.icon}</span>
+                <div key={idx} className="bg-white/60 backdrop-blur-sm p-6 rounded-3xl shadow-lg shadow-slate-200/50 border border-white/50 hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 text-center group hover:-translate-y-1">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                    <span className="text-2xl">{feature.icon}</span>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-3">{feature.title}</h3>
-                  <p className="text-slate-500 leading-relaxed">{feature.desc}</p>
+                  <h3 className="text-base font-bold text-slate-800 mb-2">{feature.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -366,10 +368,26 @@ function App() {
             {/* Weather and News Row */}
             <div className="grid lg:grid-cols-12 gap-8">
               <div className="lg:col-span-4 space-y-8">
+                {/* Traffic Alerts - Show prominently if high priority */}
+                {planData.has_high_priority_alerts && (
+                  <TrafficAlerts 
+                    alerts={planData.traffic_alerts}
+                    hasHighPriority={planData.has_high_priority_alerts}
+                    error={planData.errors?.find(e => e.service === 'traffic')?.message}
+                  />
+                )}
                 <WeatherCard 
                   weather={planData.weather} 
                   error={planData.errors?.find(e => e.service === 'weather')?.message}
                 />
+                {/* Traffic Alerts - Normal position if no high priority */}
+                {!planData.has_high_priority_alerts && (
+                  <TrafficAlerts 
+                    alerts={planData.traffic_alerts}
+                    hasHighPriority={false}
+                    error={planData.errors?.find(e => e.service === 'traffic')?.message}
+                  />
+                )}
                 <NewsFeed 
                   news={planData.news} 
                   error={planData.errors?.find(e => e.service === 'news')?.message}

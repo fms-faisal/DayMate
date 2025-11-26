@@ -48,6 +48,17 @@ class NewsArticle(BaseModel):
     published_at: Optional[str] = None
 
 
+class TrafficAlert(BaseModel):
+    """Traffic or emergency alert structure."""
+    title: str
+    description: Optional[str] = None
+    url: str
+    source: str
+    published_at: Optional[str] = None
+    alert_type: str = Field("traffic", description="Type: 'traffic' or 'emergency'")
+    priority: str = Field("medium", description="Priority: 'high' or 'medium'")
+
+
 class ServiceError(BaseModel):
     """Error information for a specific service."""
     service: str
@@ -58,6 +69,8 @@ class PlanResponse(BaseModel):
     """Response model containing weather, news, and AI-generated plan."""
     weather: Optional[WeatherData] = None
     news: List[NewsArticle] = []
+    traffic_alerts: List[TrafficAlert] = []
+    has_high_priority_alerts: bool = False
     ai_plan: str
     city: str
     errors: List[ServiceError] = []

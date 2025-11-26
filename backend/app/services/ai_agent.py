@@ -5,7 +5,7 @@ import os
 import requests
 
 
-def generate_day_plan(weather_data: dict, news_data: list, city: str = None, profile: str = "standard", preferences: dict = None) -> dict:
+def generate_day_plan(weather_data: dict, news_data: list, city: str = None, profile: str = "standard", preferences: dict = None, traffic_alerts: list = None) -> dict:
     """
     Generate a personalized daily plan based on weather and news data.
     
@@ -15,6 +15,7 @@ def generate_day_plan(weather_data: dict, news_data: list, city: str = None, pro
         city: City name for context when weather is unavailable
         profile: User profile type (standard, child, elderly)
         preferences: Dictionary of user preferences (travel, food, etc.)
+        traffic_alerts: List of traffic/emergency alert dictionaries
         
     Returns:
         Dictionary with plan and optional error info
@@ -24,13 +25,18 @@ def generate_day_plan(weather_data: dict, news_data: list, city: str = None, pro
     # Check if we have valid weather data
     has_weather = weather_data and not weather_data.get("error", False)
     has_news = news_data and len(news_data) > 0
+    has_traffic_alerts = traffic_alerts and len(traffic_alerts) > 0
+    
+    # Check for high priority alerts
+    high_priority_alerts = [a for a in (traffic_alerts or []) if a.get('priority') == 'high']
+    has_emergency = len(high_priority_alerts) > 0
     
     if not api_key or api_key == "your_gemini_api_key_here":
         # Return a rule-based plan if Gemini is not configured
         return {
             "error": True,
             "message": "AI API key not configured. Using basic recommendations.",
-            "plan": generate_fallback_plan(weather_data, news_data, city, has_weather)
+            "plan": generate_fallback_plan(weather_data, news_data, city, has_weather, traffic_alerts)
         }
     
     try:
@@ -56,6 +62,18 @@ def generate_day_plan(weather_data: dict, news_data: list, city: str = None, pro
             news_headlines = [f"• {article.get('title', '')}" for article in news_data[:5] if article.get("title")]
             news_summary = "\n".join(news_headlines)
             context_parts.append(f"\nTODAY'S NEWS:\n{news_summary}")
+        
+        # Prepare traffic/emergency alerts - HIGH PRIORITY
+        traffic_context = ""
+        if has_traffic_alerts:
+            alert_lines = []
+            for alert in traffic_alerts[:5]:
+                priority_marker = "🚨 URGENT" if alert.get('priority') == 'high' else "⚠️"
+                alert_type = alert.get('alert_type', 'traffic').upper()
+                alert_lines.append(f"{priority_marker} [{alert_type}]: {alert.get('title', '')}")
+            
+            traffic_context = "\n".join(alert_lines)
+            context_parts.append(f"\n⚠️ TRAFFIC & EMERGENCY ALERTS (PRIORITIZE THESE):\n{traffic_context}")
         
         context = "\n".join(context_parts)
         
@@ -131,6 +149,11 @@ REQUIREMENTS:
 4. Sound like a friendly local, not a tour guide
 5. If news mentions events/issues, weave them in naturally
 6. STRICTLY ADHERE to the PROFILE guidelines above.
+7. **CRITICAL - TRAFFIC/EMERGENCY ALERTS**: If any alerts are shown above:
+   - For HIGH PRIORITY (🚨) emergencies: WARN the user first, suggest avoiding affected areas, and modify plans to steer clear
+   - For traffic congestion: Suggest alternative routes or times, mention leaving earlier/later
+   - For road closures or accidents: Recommend specific detours or alternative destinations
+   - Weave safety advice naturally into the morning briefing
 
 Remember: Be specific! Say "grab a flat white at Monmouth Coffee" not "visit a local cafe"."""
 

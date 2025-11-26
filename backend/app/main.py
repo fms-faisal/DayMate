@@ -9,9 +9,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError, ChatRequest, ChatResponse
+from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError, ChatRequest, ChatResponse, TrafficAlert
 from app.services.weather import get_realtime_weather, get_weather_by_coordinates
-from app.services.news import get_local_news
+from app.services.news import get_local_news, get_traffic_alerts
 from app.services.ai_agent import generate_day_plan, generate_followup
 
 # Load environment variables
@@ -133,13 +133,40 @@ async def generate_plan(request: PlanRequest):
         for article in news_articles
     ]
     
+    # Fetch traffic/emergency alerts (graceful handling)
+    traffic_result = get_traffic_alerts(display_city)
+    traffic_alerts_data = traffic_result.get("alerts", [])
+    
+    if traffic_result.get("error", False):
+        errors.append(ServiceError(
+            service="traffic",
+            message=traffic_result.get("message", "Traffic alerts service unavailable")
+        ))
+    
+    traffic_response = [
+        TrafficAlert(
+            title=alert["title"],
+            description=alert.get("description"),
+            url=alert["url"],
+            source=alert["source"],
+            published_at=alert.get("published_at"),
+            alert_type=alert.get("alert_type", "traffic"),
+            priority=alert.get("priority", "medium")
+        )
+        for alert in traffic_alerts_data
+    ]
+    
+    # Check for high priority alerts
+    has_high_priority = any(alert.get("priority") == "high" for alert in traffic_alerts_data)
+    
     # Generate AI plan (uses available data, graceful fallback)
     ai_result = generate_day_plan(
         weather_data if has_weather else None,
         news_articles,
         display_city,
         request.profile,
-        request.preferences.model_dump() if request.preferences else None
+        request.preferences.model_dump() if request.preferences else None,
+        traffic_alerts=traffic_alerts_data
     )
     
     if ai_result.get("error", False):
@@ -159,7 +186,9 @@ async def generate_plan(request: PlanRequest):
         ai_plan=ai_plan,
         city=display_city,
         errors=errors,
-        partial_success=partial_success
+        partial_success=partial_success,
+        traffic_alerts=traffic_response,
+        has_high_priority_alerts=has_high_priority
     )
 
 
