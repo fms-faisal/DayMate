@@ -3,13 +3,14 @@
  * Main Application Component
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import WeatherCard from './components/WeatherCard';
 import NewsFeed from './components/NewsFeed';
 import PlanDisplay from './components/PlanDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorMessage from './components/ErrorMessage';
+import PreferencesModal from './components/PreferencesModal';
 
 // API URL - use environment variable or fallback to local
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -17,10 +18,30 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 function App() {
   // State management
   const [city, setCity] = useState('');
+  const [profile, setProfile] = useState('standard');
+  const [preferences, setPreferences] = useState(null);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [planData, setPlanData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
+
+  // Load preferences on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('daymate_preferences');
+    if (saved) {
+      try {
+        setPreferences(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse preferences', e);
+      }
+    }
+  }, []);
+
+  const handleSavePreferences = (newPrefs) => {
+    setPreferences(newPrefs);
+    localStorage.setItem('daymate_preferences', JSON.stringify(newPrefs));
+  };
 
   // Popular cities for quick selection
   const popularCities = ['London', 'New York', 'Tokyo', 'Paris', 'Sydney', 'Dubai'];
@@ -44,8 +65,8 @@ function App() {
     try {
       // Build request body - either with coordinates or city name
       const requestBody = coordinates 
-        ? { latitude: coordinates.latitude, longitude: coordinates.longitude }
-        : { city: cityName };
+        ? { latitude: coordinates.latitude, longitude: coordinates.longitude, profile, preferences }
+        : { city: cityName, profile, preferences };
 
       const response = await axios.post(`${API_URL}/api/plan`, requestBody, {
         timeout: 30000, // 30 second timeout for AI processing
@@ -137,63 +158,117 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
-                <span className="text-xl">🌤️</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-blue-600">DayMate</h1>
-                <p className="text-xs text-gray-500">AI Daily Planning Assistant</p>
-              </div>
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <span className="text-xl">🌤️</span>
             </div>
-            {planData && (
-              <button
-                onClick={handleReset}
-                className="text-sm text-gray-500 hover:text-blue-600 transition-colors"
-              >
-                ← Plan another city
-              </button>
-            )}
+            <div>
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">DayMate</h1>
+              <p className="text-xs text-slate-500 font-medium">
+                {preferences?.name ? `Welcome, ${preferences.name}` : 'AI Daily Planner'}
+              </p>
+            </div>
           </div>
+          {planData && (
+            <button
+              onClick={handleReset}
+              className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 rounded-lg transition-all duration-200"
+            >
+              <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Plan another city
+            </button>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search Section */}
         {!planData && !loading && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in max-w-4xl mx-auto">
             {/* Hero Section */}
-            <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Plan Your Perfect Day
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
+                {preferences?.name ? `Ready for your day, ${preferences.name}?` : 'Plan Your Perfect Day'}
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 Enter your city and let DayMate create a personalized daily plan based on 
                 real-time weather and local news.
               </p>
             </div>
 
+            {/* Profile Selection */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+              <label className="block text-sm font-semibold text-slate-700 mb-4 text-center uppercase tracking-wider">
+                Select Profile
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {[
+                  { id: 'standard', label: 'Standard', icon: '🧑', color: 'blue' },
+                  { id: 'child', label: 'Family/Child', icon: '🧸', color: 'green' },
+                  { id: 'elderly', label: 'Elderly/Relaxed', icon: '🧓', color: 'purple' }
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setProfile(type.id)}
+                    className={`relative p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-center gap-3 ${
+                      profile === type.id
+                        ? `bg-${type.color}-50 border-${type.color}-500 text-${type.color}-700 shadow-sm`
+                        : 'bg-white border-slate-100 text-slate-600 hover:border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-2xl">{type.icon}</span>
+                    <span className="font-medium">{type.label}</span>
+                    {profile === type.id && (
+                      <div className={`absolute top-2 right-2 w-2 h-2 rounded-full bg-${type.color}-500`}></div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="text-center border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsPreferencesOpen(true)}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  {preferences ? 'Edit Preferences' : 'Customize Preferences'}
+                </button>
+              </div>
+            </div>
+
+            <PreferencesModal
+              isOpen={isPreferencesOpen}
+              onClose={() => setIsPreferencesOpen(false)}
+              onSave={handleSavePreferences}
+              initialPreferences={preferences}
+            />
+
             {/* Search Form */}
-            <form onSubmit={handlePlanGeneration} className="max-w-xl mx-auto mb-6">
-              <div className="flex gap-2">
+            <form onSubmit={handlePlanGeneration} className="mb-8 relative z-10">
+              <div className="flex flex-col sm:flex-row gap-3 shadow-lg shadow-slate-200/50 rounded-2xl p-2 bg-white border border-slate-100">
                 <input
                   type="text"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="Enter your city..."
-                  className="flex-1 p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  className="flex-1 p-4 bg-transparent border-none focus:ring-0 text-lg placeholder:text-slate-400 text-slate-800"
                   autoFocus
                 />
                 <button
                   type="submit"
                   disabled={!city.trim()}
-                  className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20 whitespace-nowrap"
                 >
                   Plan My Day
                 </button>
@@ -201,23 +276,23 @@ function App() {
             </form>
 
             {/* Use My Location Button */}
-            <div className="text-center mb-6">
+            <div className="text-center mb-12">
               <button
                 onClick={handleUseMyLocation}
                 disabled={locationLoading}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm disabled:opacity-50"
               >
                 {locationLoading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>Getting location...</span>
+                    <span>Locating...</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -225,24 +300,17 @@ function App() {
                   </>
                 )}
               </button>
-              <p className="text-xs text-gray-400 mt-2">Get weather for your exact location</p>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center max-w-md mx-auto mb-6">
-              <div className="flex-1 border-t border-gray-200"></div>
-              <span className="px-4 text-sm text-gray-400">or try a city</span>
-              <div className="flex-1 border-t border-gray-200"></div>
             </div>
 
             {/* Quick Select Cities */}
-            <div className="text-center mb-8">
-              <div className="flex flex-wrap justify-center gap-2">
+            <div className="text-center mb-16">
+              <p className="text-sm text-slate-400 mb-4 font-medium uppercase tracking-wider">Popular Destinations</p>
+              <div className="flex flex-wrap justify-center gap-3">
                 {popularCities.map((cityName) => (
                   <button
                     key={cityName}
                     onClick={() => handleQuickSelect(cityName)}
-                    className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                    className="px-5 py-2 bg-white border border-slate-200 rounded-full text-sm font-medium text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:shadow-md transition-all duration-200"
                   >
                     {cityName}
                   </button>
@@ -252,34 +320,26 @@ function App() {
 
             {/* Error Display */}
             {error && (
-              <div className="max-w-md mx-auto">
+              <div className="max-w-md mx-auto mb-8">
                 <ErrorMessage message={error} onRetry={() => setError(null)} />
               </div>
             )}
 
             {/* Features Section */}
-            <div className="grid md:grid-cols-3 gap-6 mt-12">
-              <div className="bg-white p-6 rounded-xl shadow-sm text-center">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🌡️</span>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                { icon: '🌡️', title: 'Real-time Weather', desc: 'Accurate forecasts for your day', color: 'blue' },
+                { icon: '📰', title: 'Local News', desc: 'Stay updated with local events', color: 'green' },
+                { icon: '🤖', title: 'AI Recommendations', desc: 'Smart, personalized itinerary', color: 'purple' }
+              ].map((feature, idx) => (
+                <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow text-center group">
+                  <div className={`w-16 h-16 bg-${feature.color}-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <span className="text-3xl">{feature.icon}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-3">{feature.title}</h3>
+                  <p className="text-slate-500 leading-relaxed">{feature.desc}</p>
                 </div>
-                <h3 className="font-semibold text-gray-800 mb-2">Real-time Weather</h3>
-                <p className="text-sm text-gray-500">Get accurate weather data for informed planning</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm text-center">
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📰</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-2">Local News</h3>
-                <p className="text-sm text-gray-500">Stay informed about events in your area</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm text-center">
-                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🤖</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-2">AI Recommendations</h3>
-                <p className="text-sm text-gray-500">Get smart, context-aware daily suggestions</p>
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -289,52 +349,55 @@ function App() {
 
         {/* Results Section */}
         {planData && !loading && (
-          <div className="animate-fade-in space-y-6">
+          <div className="animate-fade-in space-y-8">
             {/* Service Errors Banner */}
             {planData.errors && planData.errors.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-2">
-                  <span className="text-xl">⚠️</span>
-                  <div>
-                    <p className="font-medium text-amber-800">Some services had issues</p>
-                    <p className="text-sm text-amber-600 mt-1">
-                      We&apos;ve still generated recommendations based on available data.
-                    </p>
-                  </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="font-bold text-amber-800">Service Alert</p>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Some services are temporarily unavailable. We&apos;ve generated recommendations based on available data.
+                  </p>
                 </div>
               </div>
             )}
             
             {/* Weather and News Row */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <WeatherCard 
-                weather={planData.weather} 
-                error={planData.errors?.find(e => e.service === 'weather')?.message}
-              />
-              <NewsFeed 
-                news={planData.news} 
-                error={planData.errors?.find(e => e.service === 'news')?.message}
-              />
+            <div className="grid lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-4 space-y-8">
+                <WeatherCard 
+                  weather={planData.weather} 
+                  error={planData.errors?.find(e => e.service === 'weather')?.message}
+                />
+                <NewsFeed 
+                  news={planData.news} 
+                  error={planData.errors?.find(e => e.service === 'news')?.message}
+                />
+              </div>
+              
+              <div className="lg:col-span-8">
+                <PlanDisplay 
+                  plan={planData.ai_plan} 
+                  city={planData.city}
+                  weather={planData.weather}
+                  news={planData.news}
+                  error={planData.errors?.find(e => e.service === 'ai')?.message}
+                />
+              </div>
             </div>
-
-            {/* AI Plan */}
-            <PlanDisplay 
-              plan={planData.ai_plan} 
-              city={planData.city}
-              error={planData.errors?.find(e => e.service === 'ai')?.message}
-            />
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-auto">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center">
-          <p className="text-sm text-gray-500">
-            DayMate - AI Daily Planning Assistant | 
-            <span className="text-blue-500 ml-1">
-              Powered by Open-Meteo, NewsAPI & Google Gemini
-            </span>
+      <footer className="bg-white border-t border-slate-200 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 py-8 text-center">
+          <p className="text-sm text-slate-500">
+            DayMate &copy; {new Date().getFullYear()} &middot; AI Daily Planning Assistant
+          </p>
+          <p className="text-xs text-slate-400 mt-2">
+            Powered by Open-Meteo, NewsAPI & Google Gemini
           </p>
         </div>
       </footer>

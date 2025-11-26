@@ -9,10 +9,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError
+from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError, ChatRequest, ChatResponse
 from app.services.weather import get_realtime_weather, get_weather_by_coordinates
 from app.services.news import get_local_news
-from app.services.ai_agent import generate_day_plan
+from app.services.ai_agent import generate_day_plan, generate_followup
 
 # Load environment variables
 load_dotenv()
@@ -137,7 +137,9 @@ async def generate_plan(request: PlanRequest):
     ai_result = generate_day_plan(
         weather_data if has_weather else None,
         news_articles,
-        display_city
+        display_city,
+        request.profile,
+        request.preferences.model_dump() if request.preferences else None
     )
     
     if ai_result.get("error", False):
@@ -191,3 +193,33 @@ async def get_news(city: str):
     """
     result = get_local_news(city)
     return result
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_followup(request: ChatRequest):
+    """
+    Handle follow-up chat messages about the plan.
+    
+    Args:
+        request: ChatRequest containing message, context, and previous plan
+        
+    Returns:
+        ChatResponse with the AI's answer
+    """
+    # Convert Pydantic models back to dicts for the service
+    weather_dict = request.weather.dict() if request.weather else None
+    news_list = [article.dict() for article in request.news]
+    
+    result = generate_followup(
+        weather_data=weather_dict,
+        news_data=news_list,
+        city=request.city,
+        previous_plan=request.previous_plan or "",
+        user_message=request.message
+    )
+    
+    return ChatResponse(
+        response=result.get("response", ""),
+        error=result.get("error", False),
+        message=result.get("message")
+    )

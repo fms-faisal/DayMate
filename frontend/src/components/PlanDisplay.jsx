@@ -1,10 +1,71 @@
+import { useState } from 'react';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 /**
  * PlanDisplay Component
  * Displays the AI-generated daily plan with formatted content
  */
 
-function PlanDisplay({ plan, city, error }) {
+function PlanDisplay({ plan, city, weather, news, error }) {
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
   if (!plan) return null;
+
+  // Text-to-Speech function
+  const handleSpeak = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(plan);
+    utterance.onend = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
+
+  // Speech-to-Text function
+  const handleListen = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    if (isListening) {
+      // Stop listening logic if needed, but usually we just let it finish
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setChatInput(prev => prev + (prev ? ' ' : '') + transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+  };
 
   // Parse inline markdown (bold, italic)
   const parseInlineMarkdown = (text) => {
@@ -27,14 +88,15 @@ function PlanDisplay({ plan, city, error }) {
       // Headers
       if (line.startsWith('### ')) {
         return (
-          <h3 key={index} className="text-lg font-semibold text-gray-700 mt-4 mb-2">
+          <h3 key={index} className="text-lg font-bold text-slate-800 mt-6 mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
             {line.replace('### ', '')}
           </h3>
         );
       }
       if (line.startsWith('## ')) {
         return (
-          <h2 key={index} className="text-xl font-bold text-gray-800 mt-4 mb-2">
+          <h2 key={index} className="text-2xl font-bold text-slate-900 mt-8 mb-4 border-b border-slate-100 pb-2">
             {line.replace('## ', '')}
           </h2>
         );
@@ -44,9 +106,9 @@ function PlanDisplay({ plan, city, error }) {
       if (line.trimStart().startsWith('* ')) {
         const content = line.replace(/^\s*\*\s/, '');
         return (
-          <div key={index} className="flex items-start gap-3 my-2 p-3 bg-gray-50 rounded-lg">
-            <span className="text-purple-500 mt-0.5">●</span>
-            <p className="text-gray-700 flex-1">{parseInlineMarkdown(content)}</p>
+          <div key={index} className="flex items-start gap-3 my-3 p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <span className="text-blue-500 mt-1 text-lg">•</span>
+            <p className="text-slate-700 flex-1 leading-relaxed">{parseInlineMarkdown(content)}</p>
           </div>
         );
       }
@@ -55,9 +117,9 @@ function PlanDisplay({ plan, city, error }) {
       if (line.trimStart().startsWith('- ') || line.trimStart().startsWith('• ')) {
         const content = line.replace(/^\s*[-•]\s/, '');
         return (
-          <div key={index} className="flex items-start gap-3 my-2 p-3 bg-gray-50 rounded-lg">
-            <span className="text-purple-500 mt-0.5">●</span>
-            <p className="text-gray-700 flex-1">{parseInlineMarkdown(content)}</p>
+          <div key={index} className="flex items-start gap-3 my-3 p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <span className="text-blue-500 mt-1 text-lg">•</span>
+            <p className="text-slate-700 flex-1 leading-relaxed">{parseInlineMarkdown(content)}</p>
           </div>
         );
       }
@@ -67,11 +129,11 @@ function PlanDisplay({ plan, city, error }) {
         const match = line.match(/^(\d+)\.\s(.*)$/);
         if (match) {
           return (
-            <div key={index} className="flex items-start gap-3 my-2 p-3 bg-gray-50 rounded-lg">
-              <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+            <div key={index} className="flex items-start gap-3 my-3 p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+              <span className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
                 {match[1]}
               </span>
-              <p className="text-gray-700 flex-1">{parseInlineMarkdown(match[2])}</p>
+              <p className="text-slate-700 flex-1 leading-relaxed">{parseInlineMarkdown(match[2])}</p>
             </div>
           );
         }
@@ -79,43 +141,174 @@ function PlanDisplay({ plan, city, error }) {
       
       // Empty lines
       if (line.trim() === '') {
-        return <div key={index} className="h-2" />;
+        return <div key={index} className="h-4" />;
       }
       
       // Regular paragraphs
       return (
-        <p key={index} className="text-gray-600 my-2">
+        <p key={index} className="text-slate-600 my-2 leading-relaxed">
           {parseInlineMarkdown(line)}
         </p>
       );
     });
   };
 
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setChatLoading(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/api/chat`, {
+        message: userMessage,
+        city: city,
+        weather: weather,
+        news: news,
+        previous_plan: plan
+      });
+
+      if (response.data.response) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that request right now. Please try again." }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-lg border-l-4 border-purple-500 card-hover">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
-          <span className="text-2xl">✨</span>
+    <div className="space-y-6 animate-slide-up">
+      {/* Main Plan Card */}
+      <div className="bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+        {/* Decorative background blob */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+        
+        <div className="flex justify-between items-center mb-8 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-2xl">
+              <span className="text-3xl">✨</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Your Day in {city}</h2>
+              <p className="text-slate-500">Personalized itinerary</p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleSpeak}
+            className={`p-3 rounded-xl transition-all ${
+              isSpeaking 
+                ? 'bg-red-50 text-red-600 animate-pulse ring-2 ring-red-100' 
+                : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+            }`}
+            title={isSpeaking ? "Stop reading" : "Read aloud"}
+          >
+            {isSpeaking ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+            )}
+          </button>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Your Day in {city}</h2>
-          <p className="text-sm text-gray-500">Here&apos;s what I&apos;d recommend for today!</p>
+
+        {/* Error notice */}
+        {error && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <p className="text-sm text-blue-700">
+              <span className="font-bold">Note:</span> {error}
+            </p>
+          </div>
+        )}
+
+        <div className="prose prose-slate max-w-none relative z-10">
+          {formatPlan(plan)}
         </div>
       </div>
-      
-      {/* Error notice if AI fell back to basic recommendations */}
-      {error && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-blue-700">
-            <span className="font-medium">Info:</span> {error}
-          </p>
+
+      {/* Chat Interface */}
+      <div className="bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-purple-50 rounded-xl">
+            <span className="text-2xl">💬</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Chat with DayMate</h3>
+            <p className="text-sm text-slate-500">Ask for changes or more details</p>
+          </div>
         </div>
-      )}
-      
-      {/* Plan Content */}
-      <div className="plan-content text-gray-600 leading-relaxed">
-        {formatPlan(plan)}
+
+        <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+          {chatMessages.map((msg, idx) => (
+            <div 
+              key={idx} 
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-[80%] p-4 rounded-2xl ${
+                  msg.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-500/20' 
+                    : 'bg-slate-100 text-slate-700 rounded-tl-none'
+                }`}
+              >
+                <p className="leading-relaxed">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {chatLoading && (
+            <div className="flex justify-start">
+              <div className="bg-slate-100 p-4 rounded-2xl rounded-tl-none">
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleChatSubmit} className="relative">
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="e.g., 'Find a cheaper lunch place' or 'Add a museum visit'"
+            className="w-full p-4 pr-24 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-inner"
+          />
+          <div className="absolute right-2 top-2 flex gap-1">
+            <button
+              type="button"
+              onClick={handleListen}
+              className={`p-2 rounded-lg transition-colors ${
+                isListening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+              }`}
+              title="Voice input"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+            <button
+              type="submit"
+              disabled={!chatInput.trim() || chatLoading}
+              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
+        </form>
       </div>
       
       {/* Footer */}

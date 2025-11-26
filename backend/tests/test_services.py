@@ -84,9 +84,9 @@ class TestWeatherService:
         result = get_coordinates("Paris")
         
         assert result is not None
-        assert result["name"] == "Paris"
+        assert result["city_name"] == "Paris"
         assert result["country"] == "France"
-        assert result["latitude"] == 48.8566
+        assert result["lat"] == 48.8566
 
 
 class TestNewsService:
@@ -258,3 +258,44 @@ class TestAIAgent:
         assert result["error"] == True
         assert "plan" in result
         assert len(result["plan"]) > 0
+    
+    @patch('app.services.ai_agent.requests.post')
+    @patch.dict(os.environ, {'GEMINI_API_KEY': 'test_key'})
+    def test_generate_day_plan_with_preferences(self, mock_post):
+        """Test AI plan generation with user preferences."""
+        from app.services.ai_agent import generate_day_plan
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "Plan with preferences"}
+                        ]
+                    }
+                }
+            ]
+        }
+        mock_post.return_value = mock_response
+        
+        weather_data = {"city_name": "London", "country": "GB"}
+        preferences = {
+            "travel_mode": "walking",
+            "food_preference": "vegan",
+            "activity_type": "outdoor",
+            "pace": "relaxed"
+        }
+        
+        result = generate_day_plan(weather_data, [], "London", preferences=preferences)
+        
+        assert result["error"] == False
+        
+        # Verify preferences were included in the prompt
+        assert mock_post.called
+        args, kwargs = mock_post.call_args
+        request_body = kwargs['json']
+        prompt_text = request_body['contents'][0]['parts'][0]['text']
+        assert "USER PREFERENCES" in prompt_text
+        assert "vegan" in prompt_text

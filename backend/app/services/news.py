@@ -1,14 +1,16 @@
 """
-News service for fetching local news from NewsAPI.
+News service for fetching local news using Google News RSS (Free & Reliable).
 """
 import os
 import requests
+import feedparser
+import urllib.parse
 from typing import List
 
 
 def get_local_news(city: str, page_size: int = 5) -> dict:
     """
-    Fetch local news articles related to a city.
+    Fetch local news articles related to a city using Google News RSS.
     
     Args:
         city: City name to search news for
@@ -17,82 +19,43 @@ def get_local_news(city: str, page_size: int = 5) -> dict:
     Returns:
         Dictionary with articles list or error info
     """
-    api_key = os.getenv("NEWS_API_KEY")
-    
-    if not api_key or api_key == "your_newsapi_key_here":
-        return {
-            "error": True,
-            "message": "News API key not configured. Please add NEWS_API_KEY to your environment.",
-            "articles": get_fallback_news(city)
-        }
-    
-    url = f"https://newsapi.org/v2/everything"
-    params = {
-        "q": city,
-        "pageSize": page_size,
-        "sortBy": "publishedAt",
-        "language": "en",
-        "apiKey": api_key
-    }
-    
     try:
-        response = requests.get(url, params=params, timeout=10)
+        # Encode city name for URL
+        encoded_city = urllib.parse.quote(city)
         
-        if response.status_code == 401:
-            return {
-                "error": True,
-                "message": "Invalid News API key. Please check your NEWS_API_KEY.",
-                "articles": get_fallback_news(city)
-            }
+        # Google News RSS URL - searches for the city
+        rss_url = f"https://news.google.com/rss/search?q={encoded_city}&hl=en-US&gl=US&ceid=US:en"
         
-        if response.status_code == 426:
-            # NewsAPI returns 426 when using free tier from non-localhost
-            return {
-                "error": True,
-                "message": "News API free tier only works on localhost. Using fallback news.",
-                "articles": get_fallback_news(city)
-            }
+        # Parse the feed
+        feed = feedparser.parse(rss_url)
         
-        if response.status_code != 200:
-            error_msg = response.json().get("message", "Unknown error")
-            return {
-                "error": True,
-                "message": f"News service error: {error_msg}",
-                "articles": get_fallback_news(city)
-            }
-        
-        data = response.json()
-        articles = data.get("articles", [])
-        
-        if not articles:
+        if not feed.entries:
             return {
                 "error": False,
-                "message": "No news found for this location",
+                "message": f"No news found for {city}",
                 "articles": get_fallback_news(city)
             }
-        
+            
         news_list = []
-        for article in articles[:page_size]:
+        for entry in feed.entries[:page_size]:
+            # Extract image if available (Google RSS doesn't always provide clean images, but we can try)
+            # For now, we'll stick to text to be safe and fast
+            
             news_list.append({
-                "title": article.get("title", "No title"),
-                "description": article.get("description"),
-                "url": article.get("url", "#"),
-                "source": article.get("source", {}).get("name", "Unknown"),
-                "published_at": article.get("publishedAt")
+                "title": entry.title,
+                "description": entry.summary if hasattr(entry, 'summary') else "Click to read more.",
+                "url": entry.link,
+                "source": entry.source.title if hasattr(entry, 'source') else "Google News",
+                "published_at": entry.published if hasattr(entry, 'published') else None
             })
-        
+            
         return {
             "error": False,
             "articles": news_list
         }
         
-    except requests.Timeout:
-        return {
-            "error": True,
-            "message": "News service timed out. Please try again later.",
-            "articles": get_fallback_news(city)
-        }
-    except requests.RequestException as e:
+    except Exception as e:
+        print(f"Error fetching news: {e}")
         return {
             "error": True,
             "message": f"News service unavailable: {str(e)}",
