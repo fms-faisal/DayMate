@@ -36,6 +36,20 @@ function App() {
   const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'synced', 'error'
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
 
+  // Helper to get first name from Gmail (if logged in)
+  function getFirstNameFromUser(user) {
+    if (!user) return '';
+    if (user.displayName) {
+      // Try to get first word (first name)
+      return user.displayName.split(' ')[0];
+    }
+    if (user.email) {
+      // Use email prefix as fallback
+      return user.email.split('@')[0];
+    }
+    return '';
+  }
+
   // Load persisted data on mount
   useEffect(() => {
     const savedPlanData = localStorage.getItem('daymate_planData');
@@ -123,6 +137,46 @@ function App() {
     loadPreferences();
   }, [isAuthenticated, user]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  // Real-time traffic updates
+  useEffect(() => {
+    if (!planData?.city) return;
+
+    const updateTrafficData = async () => {
+      try {
+        console.log('🔄 Updating real-time traffic data...');
+        const response = await axios.post(`${API_URL}/api/plan`, {
+          city: planData.city,
+          profile: profile,
+          preferences: preferences
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.traffic_data && !response.data.traffic_data.error) {
+          // Update only the traffic data in the plan
+          setPlanData(prevData => ({
+            ...prevData,
+            traffic_data: response.data.traffic_data,
+            traffic_alerts: response.data.traffic_alerts || [],
+            has_high_priority_alerts: response.data.has_high_priority_alerts || false
+          }));
+
+          console.log('✅ Traffic data updated successfully');
+        }
+      } catch (error) {
+        console.error('❌ Failed to update traffic data:', error);
+      }
+    };
+
+    // Update traffic data every 5 minutes
+    const interval = setInterval(updateTrafficData, 5 * 60 * 1000);
+
+    // Cleanup interval on unmount or city change
+    return () => clearInterval(interval);
+  }, [planData?.city, profile, preferences]);
 
   const handleSavePreferences = async (newPrefs) => {
     setPreferences(newPrefs);
@@ -357,7 +411,17 @@ function App() {
             {/* Hero Section */}
             <div className="text-center mb-8 sm:mb-12">
               <h2 className="text-2xl xs:text-3xl md:text-5xl font-extrabold mb-4 sm:mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-pink-600 to-orange-500">
-                {preferences?.name ? `Ready for your day, ${preferences.name}?` : 'Plan Your Perfect Day'}
+                {(() => {
+                  if (preferences?.name && preferences.name.trim()) {
+                    return `Ready for your day, ${preferences.name}?`;
+                  } else if (user) {
+                    const firstName = getFirstNameFromUser(user);
+                    if (firstName) {
+                      return `Ready for your day, ${firstName}?`;
+                    }
+                  }
+                  return 'Plan Your Perfect Day';
+                })()}
               </h2>
               <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 Enter your city and let DayMate create a personalized daily plan based on real-time weather and local news.
@@ -530,19 +594,21 @@ function App() {
               <div className="lg:col-span-4 space-y-8">
                 {/* Traffic Alerts - Show prominently if high priority */}
                 {planData.has_high_priority_alerts && (
-                  <TrafficAlerts 
+                  <TrafficAlerts
+                    trafficData={planData.traffic_data}
                     alerts={planData.traffic_alerts}
                     hasHighPriority={planData.has_high_priority_alerts}
                     error={planData.errors?.find(e => e.service === 'traffic')?.message}
                   />
                 )}
-                <WeatherCard 
-                  weather={planData.weather} 
+                <WeatherCard
+                  weather={planData.weather}
                   error={planData.errors?.find(e => e.service === 'weather')?.message}
                 />
                 {/* Traffic Alerts - Normal position if no high priority */}
                 {!planData.has_high_priority_alerts && (
-                  <TrafficAlerts 
+                  <TrafficAlerts
+                    trafficData={planData.traffic_data}
                     alerts={planData.traffic_alerts}
                     hasHighPriority={false}
                     error={planData.errors?.find(e => e.service === 'traffic')?.message}

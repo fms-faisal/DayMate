@@ -1,4 +1,4 @@
-"""
+﻿"""
 News service for fetching local news using Google News RSS (Free & Reliable).
 """
 import os

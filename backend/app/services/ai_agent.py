@@ -76,27 +76,42 @@ def generate_day_plan(weather_data: dict, news_data: list, city: str = None, pro
             context_parts.append(f"\n⚠️ TRAFFIC & EMERGENCY ALERTS (PRIORITIZE THESE):\n{traffic_context}")
         
         context = "\n".join(context_parts)
-        
-        # Define profile-specific instructions
+        # Define profile-specific instructions (expanded for deep personalization)
         profile_instructions = ""
         if profile == "child":
-            profile_instructions = """
-PROFILE: FAMILY WITH CHILDREN
-- Focus on kid-friendly activities (parks with playgrounds, interactive museums, zoos)
-- Suggest family-friendly restaurants with kid menus
-- Keep travel times short and manageable
-- Mention facilities like restrooms or baby changing spots if relevant
-- Avoid crowded bars or quiet art galleries unless they have kids' programs"""
+            profile_instructions = (
+                "PROFILE: FAMILY/CHILD (The Safety & Fun Filter)\n"
+                "- Focus: Entertainment, safety, minimal travel time, child-friendly facilities.\n"
+                "- News: Ignore political or crime news unless it poses an immediate danger. Focus on local events, parades, or park openings.\n"
+                "- Weather (Rain): Suggest indoor play zones, science museums, or libraries with reading hours. Explicitly warn to bring extra clothes.\n"
+                "- Weather (Hot): Suggest parks with water fountains or shaded playgrounds. Remind parents about sunscreen.\n"
+                "- Traffic: If traffic is bad, suggest staying in the local neighborhood to avoid trapping kids in a car for hours.\n"
+                "- Activities: Only suggest venues with child-friendly facilities (playgrounds, family restrooms, stroller access).\n"
+                "- Activity Pace: Enthusiastic, but not rushed. 2-3 main activities max.\n"
+                "- Tone: Enthusiastic and protective. Use fun language and emojis sparingly (1-2 max).\n"
+                "- Always mention safety tips for children and families."
+            )
         elif profile == "elderly":
-            profile_instructions = """
-PROFILE: ELDERLY / RELAXED PACE
-- Focus on accessible locations (flat ground, elevators, minimal stairs)
-- Suggest comfortable seating availability
-- Keep the pace relaxed and unhurried
-- Avoid loud, crowded, or chaotic venues
-- Suggest places with good accessibility and restrooms"""
+            profile_instructions = (
+                "PROFILE: ELDERLY/RELAXED (The Accessibility & Comfort Filter)\n"
+                "- Focus: Accessibility, low physical impact, quiet, health safety.\n"
+                "- Mobility: Only suggest venues known for accessibility (no intense hiking). Prioritize places with seating.\n"
+                "- Weather (Cold/Rain): Strictly advise staying indoors or visiting a heated indoor mall/museum. Warn about slippery surfaces.\n"
+                "- News: Prioritize health advisories (e.g., flu season, air quality alerts).\n"
+                "- Activity Pace: Slow. 1-2 main activities max. Suggest 'afternoon tea' or 'scenic drives' rather than walking tours.\n"
+                "- Tone: Respectful, calm, and clear.\n"
+                "- Always mention comfort and safety for elderly users."
+            )
         else:
-            profile_instructions = "PROFILE: STANDARD ADULT (General interest)"
+            profile_instructions = (
+                "PROFILE: STANDARD (The Default)\n"
+                "- Focus: Efficiency, productivity, and general leisure.\n"
+                "- Traffic: If there is traffic, suggest the fastest alternative route or a podcast to listen to.\n"
+                "- Weather (Rain): Suggest a gym or a cafe with WiFi.\n"
+                "- Activity Pace: Moderate to fast. Pack 3-4 activities in the day.\n"
+                "- Tone: Friendly, energetic, and practical.\n"
+                "- Suggest a mix of work, leisure, and local highlights."
+            )
 
         # Define user preference instructions
         pref_instructions = ""

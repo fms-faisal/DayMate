@@ -59,6 +59,39 @@ class TrafficAlert(BaseModel):
     priority: str = Field("medium", description="Priority: 'high' or 'medium'")
 
 
+class RoadCondition(BaseModel):
+    """Real-time road condition data."""
+    road_name: str
+    congestion_level: str = Field(..., description="Traffic congestion: 'free', 'light', 'moderate', 'heavy', 'jammed'")
+    speed_kmh: float
+    normal_speed_kmh: float
+    incident_type: Optional[str] = None
+    description: Optional[str] = None
+    last_updated: str
+
+
+class TrafficIncident(BaseModel):
+    """Traffic incident or event."""
+    incident_type: str = Field(..., description="Type: 'accident', 'construction', 'road_closure', 'weather', 'event'")
+    severity: str = Field(..., description="Severity: 'minor', 'major', 'critical'")
+    road_name: str
+    location: str
+    description: str
+    start_time: str
+    estimated_end_time: Optional[str] = None
+    delay_minutes: Optional[int] = None
+
+
+class TrafficData(BaseModel):
+    """Complete traffic information response."""
+    error: bool = False
+    road_conditions: List[RoadCondition] = []
+    incidents: List[TrafficIncident] = []
+    last_updated: str
+    data_source: str
+    is_simulated: bool = False
+
+
 class ServiceError(BaseModel):
     """Error information for a specific service."""
     service: str
@@ -69,7 +102,8 @@ class PlanResponse(BaseModel):
     """Response model containing weather, news, and AI-generated plan."""
     weather: Optional[WeatherData] = None
     news: List[NewsArticle] = []
-    traffic_alerts: List[TrafficAlert] = []
+    traffic_data: Optional[TrafficData] = None
+    traffic_alerts: List[TrafficAlert] = []  # Keep for backward compatibility
     has_high_priority_alerts: bool = False
     ai_plan: str
     city: str

@@ -22,6 +22,7 @@ An AI-powered assistant that helps users plan their day by combining real-time w
 ### Core Features
 
 - **Real-time Weather Integration** - Fetches current weather data from Open-Meteo API (FREE, no key needed)
+- **Real-time Traffic Updates** - Shows road congestion levels and incidents using TomTom Traffic API (Open Traffic - World Bank)
 - **News Aggregation** - Retrieves local news via NewsAPI
 - **AI Planning Agent** - Generates personalized daily recommendations using Google Gemini
 - **Clean User Interface** - Modern React UI with Tailwind CSS styling
@@ -310,6 +311,9 @@ docker run -p 8000:8000 --env-file .env daymate-backend
 
 ```env
 # Weather: Uses Open-Meteo - NO API KEY NEEDED!
+# Traffic: Uses TomTom Traffic API (Open Traffic - World Bank)
+# Based on OSM and Telenav data - Free developer tier available
+TOMTOM_API_KEY=your_tomtom_api_key
 NEWS_API_KEY=your_newsapi_key
 GEMINI_API_KEY=your_gemini_api_key
 ALLOWED_ORIGINS=http://localhost:5173

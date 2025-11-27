@@ -8,10 +8,12 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from datetime import datetime
 
-from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError, ChatRequest, ChatResponse, TrafficAlert
+from app.models import PlanRequest, PlanResponse, WeatherData, NewsArticle, HealthResponse, ServiceError, ChatRequest, ChatResponse, TrafficAlert, TrafficData, RoadCondition, TrafficIncident
 from app.services.weather import get_realtime_weather, get_weather_by_coordinates
 from app.services.news import get_local_news, get_traffic_alerts
+from app.services.traffic import get_realtime_traffic
 from app.services.ai_agent import generate_day_plan, generate_followup
 
 # Load environment variables
@@ -133,31 +135,97 @@ async def generate_plan(request: PlanRequest):
         for article in news_articles
     ]
     
-    # Fetch traffic/emergency alerts (graceful handling)
-    traffic_result = get_traffic_alerts(display_city)
-    traffic_alerts_data = traffic_result.get("alerts", [])
-    
-    if traffic_result.get("error", False):
-        errors.append(ServiceError(
-            service="traffic",
-            message=traffic_result.get("message", "Traffic alerts service unavailable")
-        ))
-    
-    traffic_response = [
-        TrafficAlert(
-            title=alert["title"],
-            description=alert.get("description"),
-            url=alert["url"],
-            source=alert["source"],
-            published_at=alert.get("published_at"),
-            alert_type=alert.get("alert_type", "traffic"),
-            priority=alert.get("priority", "medium")
+    # Fetch real-time traffic data (graceful handling)
+    if use_coordinates:
+        traffic_result = get_realtime_traffic(display_city, request.latitude, request.longitude)
+    else:
+        traffic_result = get_realtime_traffic(display_city)
+
+    traffic_data_response = None
+    traffic_alerts_data = []
+
+    if not traffic_result.get("error", False):
+        # Convert road conditions and incidents to legacy format for backward compatibility
+        road_conditions = traffic_result.get("road_conditions", [])
+        incidents = traffic_result.get("incidents", [])
+
+        # Create traffic alerts from road conditions and incidents
+        for condition in road_conditions:
+            if condition["congestion_level"] in ["heavy", "jammed"]:
+                alert_type = "traffic"
+                priority = "high" if condition["congestion_level"] == "jammed" else "medium"
+                title = f"{condition['congestion_level'].title()} traffic on {condition['road_name']}"
+                description = f"Current speed: {condition['speed_kmh']} km/h (normal: {condition['normal_speed_kmh']} km/h)"
+
+                traffic_alerts_data.append({
+                    "title": title,
+                    "description": description,
+                    "url": "#",  # No URL for real-time data
+                    "source": traffic_result.get("data_source", "Real-Time Traffic"),
+                    "published_at": condition.get("last_updated"),
+                    "alert_type": alert_type,
+                    "priority": priority
+                })
+
+        # Add incidents as high-priority alerts
+        for incident in incidents:
+            priority = "high" if incident["severity"] == "critical" else "medium"
+            title = f"{incident['incident_type'].replace('_', ' ').title()} on {incident['road_name']}"
+            description = incident["description"]
+
+            traffic_alerts_data.append({
+                "title": title,
+                "description": description,
+                "url": "#",
+                "source": traffic_result.get("data_source", "Real-Time Traffic"),
+                "published_at": incident.get("start_time"),
+                "alert_type": "emergency" if incident["incident_type"] in ["accident", "road_closure"] else "traffic",
+                "priority": priority
+            })
+
+        # Create TrafficData response
+        traffic_data_response = TrafficData(
+            error=False,
+            road_conditions=[
+                RoadCondition(
+                    road_name=rc["road_name"],
+                    congestion_level=rc["congestion_level"],
+                    speed_kmh=rc["speed_kmh"],
+                    normal_speed_kmh=rc["normal_speed_kmh"],
+                    incident_type=rc.get("incident_type"),
+                    description=rc.get("description"),
+                    last_updated=rc["last_updated"]
+                )
+                for rc in road_conditions
+            ],
+            incidents=[
+                TrafficIncident(
+                    incident_type=inc["incident_type"],
+                    severity=inc["severity"],
+                    road_name=inc["road_name"],
+                    location=inc["location"],
+                    description=inc["description"],
+                    start_time=inc["start_time"],
+                    estimated_end_time=inc.get("estimated_end_time"),
+                    delay_minutes=inc.get("delay_minutes")
+                )
+                for inc in incidents
+            ],
+            last_updated=traffic_result.get("last_updated", datetime.now().isoformat()),
+            data_source=traffic_result.get("data_source", "Unknown"),
+            is_simulated=traffic_result.get("is_simulated", False)
         )
-        for alert in traffic_alerts_data
-    ]
-    
-    # Check for high priority alerts
-    has_high_priority = any(alert.get("priority") == "high" for alert in traffic_alerts_data)
+    else:
+        # If TomTom fails, fall back to Google News RSS for traffic alerts
+        news_traffic = get_traffic_alerts(display_city)
+        if not news_traffic.get("error", True):
+            for alert in news_traffic.get("alerts", []):
+                traffic_alerts_data.append(alert)
+        else:
+            errors.append(ServiceError(
+                service="traffic",
+                message=traffic_result.get("message", "Real-time traffic service unavailable")
+            ))
     
     # Generate AI plan (uses available data, graceful fallback)
     ai_result = generate_day_plan(
@@ -177,6 +245,22 @@ async def generate_plan(request: PlanRequest):
     
     ai_plan = ai_result.get("plan", "Unable to generate plan. Please try again later.")
     
+    # Check for high priority alerts
+    has_high_priority = any(alert.get("priority") == "high" for alert in traffic_alerts_data)
+    
+    traffic_response = [
+        TrafficAlert(
+            title=alert["title"],
+            description=alert.get("description"),
+            url=alert["url"],
+            source=alert["source"],
+            published_at=alert.get("published_at"),
+            alert_type=alert.get("alert_type", "traffic"),
+            priority=alert.get("priority", "medium")
+        )
+        for alert in traffic_alerts_data
+    ]
+    
     # Determine if this is a partial success
     partial_success = has_weather or len(news_articles) > 0 or ai_plan
     
@@ -187,6 +271,7 @@ async def generate_plan(request: PlanRequest):
         city=display_city,
         errors=errors,
         partial_success=partial_success,
+        traffic_data=traffic_data_response,
         traffic_alerts=traffic_response,
         has_high_priority_alerts=has_high_priority
     )
