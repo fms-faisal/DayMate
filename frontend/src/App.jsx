@@ -5,6 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+// Increase default axios timeout to 60s to allow longer backend processing (AI calls)
+axios.defaults.timeout = 60000
 import WeatherCard from './components/WeatherCard';
 import NewsFeed from './components/NewsFeed';
 import PlanDisplay from './components/PlanDisplay';
