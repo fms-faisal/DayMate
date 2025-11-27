@@ -250,11 +250,31 @@ curl -X POST "http://localhost:8000/api/plan" \
 
 6. Deploy!
 
-> Important: Environment & Secrets
->
-> - Do NOT commit a `.env` file with real API keys or secrets. This repository includes `backend/.env.example` as a template. Copy it to `.env` for local development only.
-> - For production on Render (or similar hosts) set the environment variables in the service dashboard. Render injects a `PORT` value at runtime — do not hard-code `PORT`/`HOST` in a committed file. The recommended start command (used above) references `$PORT` so the platform can control it.
-> - If you accidentally commit secrets to git, rotate the keys immediately and consider using git-filter-repo or the provider's guidance to scrub history.
+### Environment & Deployment notes
+
+- Do NOT commit a `.env` file with real API keys or secrets. Use `backend/.env.example` as a template for local development and set real secrets in the hosting provider dashboard (Render/Vercel).
+- Backend CORS: set `ALLOWED_ORIGINS` in Render to a comma-separated list of allowed frontends (for example: `http://localhost:5173,https://your-frontend.vercel.app`). Avoid using `*` when your app uses credentials (cookies or auth headers) because browsers block wildcard origins combined with Access-Control-Allow-Credentials.
+- Frontend build-time variables: On Vercel set `VITE_API_URL` to your backend URL (for example `https://daymate-backend-5f7j.onrender.com`) and the `VITE_FIREBASE_*` values from your Firebase project settings. These are read at build time — update them in Vercel and redeploy the site.
+- Firebase: enable Authentication (Google provider) and add your Vercel domain to the Authorized Domains in Firebase Console. Verify `firestore.rules` restrict access to authenticated users only (see recommended snippet below).
+
+Recommended Firestore rules (restrict reads/writes to authenticated users under their UID):
+
+```text
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{collection}/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+If you accidentally commit secrets, rotate the keys immediately and follow your provider's guidance for removing secrets from git history.
 
 ### Frontend Deployment (Vercel)
 
