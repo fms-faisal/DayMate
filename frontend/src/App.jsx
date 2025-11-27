@@ -505,7 +505,7 @@ function App() {
               <button
                 onClick={handleUseMyLocation}
                 disabled={locationLoading}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/60 backdrop-blur-sm border border-violet-200 text-violet-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-300 transition-all shadow-sm disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white/60 backdrop-blur-sm border border-violet-500 text-violet-700 font-medium rounded-xl hover:bg-violet-50 hover:border-violet-300 transition-all shadow-sm disabled:opacity-50"
               >
                 {locationLoading ? (
                   <>
