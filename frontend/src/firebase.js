@@ -20,9 +20,11 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+console.log('Firebase app initialized:', app);
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);
+console.log('Firebase Auth initialized');
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
@@ -32,5 +34,6 @@ googleProvider.setCustomParameters({
 
 // Initialize Firestore
 export const db = getFirestore(app);
+console.log('Firestore initialized');
 
 export default app;

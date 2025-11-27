@@ -13,8 +13,9 @@ import ErrorMessage from './components/ErrorMessage';
 import PreferencesModal from './components/PreferencesModal';
 import TrafficAlerts from './components/TrafficAlerts';
 import AuthButton from './components/AuthButton';
+import ChatHistoryModal from './components/ChatHistoryModal';
 import { useAuth } from './contexts/AuthContext';
-import { saveUserPreferences, loadUserPreferences, saveLastCity, getLastCity } from './services/firestoreService';
+import { saveUserPreferences, loadUserPreferences, saveLastCity } from './services/firestoreService';
 
 // API URL - use environment variable or fallback to local
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -33,6 +34,7 @@ function App() {
   const [error, setError] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null); // 'syncing', 'synced', 'error'
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -41,10 +43,10 @@ function App() {
       try {
         const parsed = JSON.parse(savedPlanData);
         setPlanData(parsed);
-        // Also restore the city if available
-        if (parsed.city) {
-          setCity(parsed.city);
-        }
+        // Don't restore the city to avoid showing Bengali text
+        // if (parsed.city) {
+        //   setCity(parsed.city);
+        // }
       } catch (e) {
         console.error('Failed to parse saved plan data', e);
         localStorage.removeItem('daymate_planData');
@@ -84,12 +86,12 @@ function App() {
             }
           }
           
-          // Load last city (don't block on this)
-          getLastCity(user.uid).then(lastCity => {
-            if (lastCity) {
-              setCity(prevCity => prevCity || lastCity);
-            }
-          }).catch(console.error);
+          // Don't load last city to avoid showing Bengali text
+          // getLastCity(user.uid).then(lastCity => {
+          //   if (lastCity) {
+          //     setCity(prevCity => prevCity || lastCity);
+          //   }
+          // }).catch(console.error);
           
           setSyncStatus('synced');
           // Auto-hide after 2 seconds
@@ -327,6 +329,19 @@ function App() {
                 <span className="hidden sm:inline">Plan another city</span>
               </button>
             )}
+
+            {isAuthenticated && (
+              <button
+                onClick={() => setIsChatHistoryOpen(true)}
+                className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white/50 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-slate-200/50"
+                title="View chat history"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span className="hidden sm:inline">Chat History</span>
+              </button>
+            )}
             
             {/* Auth Button */}
             <AuthButton />
@@ -546,6 +561,7 @@ function App() {
                   weather={planData.weather}
                   news={planData.news}
                   error={planData.errors?.find(e => e.service === 'ai')?.message}
+                  profile={profile}
                 />
               </div>
             </div>
@@ -564,6 +580,12 @@ function App() {
           </p>
         </div>
       </footer>
+
+      {/* Chat History Modal */}
+      <ChatHistoryModal
+        isOpen={isChatHistoryOpen}
+        onClose={() => setIsChatHistoryOpen(false)}
+      />
     </div>
   );
 }

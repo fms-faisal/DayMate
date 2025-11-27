@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import axios from 'axios';
+import AuthContext from '../contexts/AuthContext';
+import { saveChatConversation } from '../services/chatHistoryService';
+import ChatHistory from './ChatHistory';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -8,12 +11,54 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
  * Displays the AI-generated daily plan with formatted content
  */
 
-function PlanDisplay({ plan, city, weather, news, error }) {
+function PlanDisplay({ plan, city, weather, news, error, profile }) {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'history'
+
+  const { user } = useContext(AuthContext);
+
+  // Save chat conversation to history
+  const saveChatHistory = useCallback(async (messages) => {
+    console.log('saveChatHistory called with messages:', messages.length, 'user:', user);
+    if (messages.length === 0 || !user) {
+      console.log('Not saving - messages empty or no user');
+      return;
+    }
+
+    try {
+      const conversation = {
+        timestamp: new Date().toISOString(),
+        city: city,
+        profile: profile || 'standard',
+        messages: messages,
+        weather: weather,
+        news: news
+      };
+
+      console.log('Saving conversation to Firebase:', conversation);
+      await saveChatConversation(user.uid, conversation);
+      console.log('Successfully saved to Firebase');
+    } catch (e) {
+      console.error('Failed to save chat history to Firebase', e);
+    }
+  }, [city, profile, weather, news, user]);
+
+  // Load a previous conversation
+  const handleLoadConversation = (conversation) => {
+    setChatMessages(conversation.messages || []);
+    setActiveTab('chat');
+  };
+
+  // Save chat history when messages change
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      saveChatHistory(chatMessages);
+    }
+  }, [chatMessages, saveChatHistory]);
 
   if (!plan) return null;
 
@@ -237,78 +282,117 @@ function PlanDisplay({ plan, city, weather, news, error }) {
 
       {/* Chat Interface */}
       <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg shadow-pink-500/10 border border-white/50">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl shadow-lg shadow-pink-500/20">
-            <span className="text-2xl">💬</span>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-orange-500">Chat with DayMate</h3>
-            <p className="text-sm text-slate-500">Ask for changes or more details</p>
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex border-b border-slate-200 mb-6">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors ${
+              activeTab === 'chat'
+                ? 'text-pink-600 border-b-2 border-pink-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span>💬</span>
+            Current Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors ${
+              activeTab === 'history'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span>📚</span>
+            History
+          </button>
         </div>
 
-        <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-          {chatMessages.map((msg, idx) => (
-            <div 
-              key={idx} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`max-w-[80%] p-4 rounded-2xl ${
-                  msg.role === 'user' 
-                    ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-tr-none shadow-md shadow-pink-500/20' 
-                    : 'bg-slate-100 text-slate-700 rounded-tl-none'
-                }`}
-              >
-                <p className="leading-relaxed">{msg.content}</p>
+        {/* Tab Content */}
+        {activeTab === 'chat' ? (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl shadow-lg shadow-pink-500/20">
+                <span className="text-2xl">💬</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-orange-500">Chat with DayMate</h3>
+                <p className="text-sm text-slate-500">
+                  {user ? 'Ask for changes or more details' : 'Sign in to save your conversations'}
+                </p>
               </div>
             </div>
-          ))}
-          {chatLoading && (
-            <div className="flex justify-start">
-              <div className="bg-slate-100 p-4 rounded-2xl rounded-tl-none">
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></div>
+
+            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-4 rounded-2xl ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-tr-none shadow-md shadow-pink-500/20'
+                        : 'bg-slate-100 text-slate-700 rounded-tl-none'
+                    }`}
+                  >
+                    <p className="leading-relaxed">{msg.content}</p>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-100 p-4 rounded-2xl rounded-tl-none">
+                    <div className="flex gap-2">
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <form onSubmit={handleChatSubmit} className="relative">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="e.g., 'Find a cheaper lunch place' or 'Add a museum visit'"
-            className="w-full p-4 pr-24 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+            <form onSubmit={handleChatSubmit} className="relative">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder={user ? "e.g., 'Find a cheaper lunch place' or 'Add a museum visit'" : "Sign in to save your conversations"}
+                className="w-full p-4 pr-24 bg-violet-50/50 border border-violet-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+              />
+              <div className="absolute right-2 top-2 flex gap-1">
+                <button
+                  type="button"
+                  onClick={handleListen}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isListening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-pink-600 hover:bg-pink-50'
+                  }`}
+                  title="Voice input"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </button>
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || chatLoading || !user}
+                  className="p-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-lg hover:from-violet-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-pink-500/20"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <ChatHistory
+            currentCity={city}
+            currentProfile={profile}
+            onLoadConversation={handleLoadConversation}
           />
-          <div className="absolute right-2 top-2 flex gap-1">
-            <button
-              type="button"
-              onClick={handleListen}
-              className={`p-2 rounded-lg transition-colors ${
-                isListening ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-pink-600 hover:bg-pink-50'
-              }`}
-              title="Voice input"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </button>
-            <button
-              type="submit"
-              disabled={!chatInput.trim() || chatLoading}
-              className="p-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-lg hover:from-violet-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-pink-500/20"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-          </div>
-        </form>
+        )}
       </div>
       
       {/* Footer */}

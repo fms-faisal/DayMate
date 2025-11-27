@@ -5,7 +5,7 @@
 
 import PropTypes from 'prop-types';
 
-function TrafficAlerts({ alerts, hasHighPriority, error }) {
+function TrafficAlerts({ alerts = [], hasHighPriority = false, error = null }) {
   if (error) {
     return (
       <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-lg shadow-slate-200/50 border border-white/50 p-6">
@@ -155,12 +155,6 @@ TrafficAlerts.propTypes = {
   })),
   hasHighPriority: PropTypes.bool,
   error: PropTypes.string
-};
-
-TrafficAlerts.defaultProps = {
-  alerts: [],
-  hasHighPriority: false,
-  error: null
 };
 
 export default TrafficAlerts;
