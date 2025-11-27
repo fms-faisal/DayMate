@@ -29,11 +29,12 @@ app = FastAPI(
 )
 
 # Configure CORS - Allow all origins in development, restrict in production
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, set specific frontend URLs
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
