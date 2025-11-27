@@ -9,13 +9,11 @@ An AI-powered assistant that helps users plan their day by combining real-time w
 
 ## Live Application URLs
 
-| Service           | URL                                         |
-| ----------------- | ------------------------------------------- |
-| Frontend          | `https://daymate-frontend.vercel.app`       |
-| Backend API       | `https://daymate-backend.onrender.com`      |
-| API Documentation | `https://daymate-backend.onrender.com/docs` |
-
-> **Note:** Replace the URLs above with your actual deployed URLs after deployment.
+| Service           | URL                                              |
+| ----------------- | ------------------------------------------------ |
+| Frontend          | `https://day-mate-navy.vercel.app/`              |
+| Backend API       | `https://daymate-backend-5f7j.onrender.com`      |
+| API Documentation | `https://daymate-backend-5f7j.onrender.com/docs` |
 
 ## Features
 
@@ -110,7 +108,7 @@ DayMate/
 - Node.js 18+
 - npm or yarn
 
-### API Keys Required (All FREE - No Credit Card Needed)
+### API Keys Required (All FREE)
 
 1. **Weather API** - Using [Open-Meteo](https://open-meteo.com/) - **NO API KEY NEEDED!** Completely free.
 2. **NewsAPI Key** - [Get FREE key here](https://newsapi.org/) - Free for development
@@ -250,14 +248,26 @@ curl -X POST "http://localhost:8000/api/plan" \
 
 6. Deploy!
 
-### Environment & Deployment notes
+### Environment & Deployment
 
-- Do NOT commit a `.env` file with real API keys or secrets. Use `backend/.env.example` as a template for local development and set real secrets in the hosting provider dashboard (Render/Vercel).
-- Backend CORS: set `ALLOWED_ORIGINS` in Render to a comma-separated list of allowed frontends (for example: `http://localhost:5173,https://your-frontend.vercel.app`). Avoid using `*` when your app uses credentials (cookies or auth headers) because browsers block wildcard origins combined with Access-Control-Allow-Credentials.
-- Frontend build-time variables: On Vercel set `VITE_API_URL` to your backend URL (for example `https://daymate-backend-5f7j.onrender.com`) and the `VITE_FIREBASE_*` values from your Firebase project settings. These are read at build time — update them in Vercel and redeploy the site.
-- Firebase: enable Authentication (Google provider) and add your Vercel domain to the Authorized Domains in Firebase Console. Verify `firestore.rules` restrict access to authenticated users only (see recommended snippet below).
+This section outlines the configuration required to run DayMate locally and in production.
 
-Recommended Firestore rules (restrict reads/writes to authenticated users under their UID):
+- TOMTOM_API_KEY
+- NEWS_API_KEY
+- GEMINI_API_KEY
+- ALLOWED_ORIGINS (comma-separated list of allowed front-end origins)
+
+For local development: copy `backend/.env.example` to `backend/.env` and fill in values. For production, set these values in your host's environment configuration (for example, Render's Service Environment settings).
+
+- `ALLOWED_ORIGINS` should contain the exact origins your frontend will use (for example `http://localhost:5173,https://day-mate-navy.vercel.app`).
+- Do not use a wildcard (`*`) when your frontend relies on credentials (cookies or auth headers), since browsers require an explicit origin when credentials are allowed.
+
+- Firebase / Firestore:
+  - Enable Authentication (Google provider) and add your deployed frontend domain to Authorized Domains in the Firebase Console.
+  - Structure chat data under `users/{uid}/chatHistory` so records are user-scoped.
+  - Apply Firestore security rules that restrict access to authenticated users acting on their own data; an example rule is shown below.
+    Frontend build-time variables: On Vercel set `VITE_API_URL` to your backend URL (for example `https://daymate-backend-5f7j.onrender.com`) and the `VITE_FIREBASE_*` values from your Firebase project settings. These are read at build time — update them in Vercel and redeploy the site.
+    Recommended Firestore rules (example - restrict reads/writes to authenticated users under their UID):
 
 ```text
 rules_version = '2';
@@ -274,7 +284,7 @@ service cloud.firestore {
 }
 ```
 
-If you accidentally commit secrets, rotate the keys immediately and follow your provider's guidance for removing secrets from git history.
+If secrets are committed inadvertently, rotate affected keys and follow best-practice guidance from your provider to remove them from history.
 
 ### Frontend Deployment (Vercel)
 
@@ -287,7 +297,7 @@ If you accidentally commit secrets, rotate the keys immediately and follow your 
 
 3. Add Environment Variable:
 
-   - `VITE_API_URL` = Your Render backend URL (e.g., `https://daymate-backend.onrender.com`)
+- `VITE_API_URL` = Your Render backend URL (e.g., `https://daymate-backend-5f7j.onrender.com`)
 
 4. Deploy!
 
@@ -306,11 +316,14 @@ docker run -p 8000:8000 --env-file .env daymate-backend
 
 ### Home Page
 
-![Home Page](screenshots/home.png)
+![Home Page](screenshots/homepage.png)
+![Home Page](screenshots/homepage_01.png)
 
 ### Results View
 
-![Results](screenshots/results.png)
+![Results](screenshots/result.png)
+![Results](screenshots/result_01.png)
+![Results](screenshots/result_02.png)
 
 > Add your screenshots to a `screenshots/` folder
 
