@@ -250,6 +250,12 @@ curl -X POST "http://localhost:8000/api/plan" \
 
 6. Deploy!
 
+> Important: Environment & Secrets
+>
+> - Do NOT commit a `.env` file with real API keys or secrets. This repository includes `backend/.env.example` as a template. Copy it to `.env` for local development only.
+> - For production on Render (or similar hosts) set the environment variables in the service dashboard. Render injects a `PORT` value at runtime — do not hard-code `PORT`/`HOST` in a committed file. The recommended start command (used above) references `$PORT` so the platform can control it.
+> - If you accidentally commit secrets to git, rotate the keys immediately and consider using git-filter-repo or the provider's guidance to scrub history.
+
 ### Frontend Deployment (Vercel)
 
 1. Import your GitHub repository on [Vercel](https://vercel.com)
