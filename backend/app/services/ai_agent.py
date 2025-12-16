@@ -190,11 +190,11 @@ Remember: Be specific! Say "grab a flat white at Monmouth Coffee" not "visit a l
             ],
             "generationConfig": {
                 "temperature": 0.8,
-                "maxOutputTokens": 800
+                "maxOutputTokens": 3048
             }
         }
         
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, json=payload, timeout=90)
         
         if response.status_code == 400:
             return {
