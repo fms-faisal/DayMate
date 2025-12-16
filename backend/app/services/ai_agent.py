@@ -172,8 +172,8 @@ REQUIREMENTS:
 
 Remember: Be specific! Say "grab a flat white at Monmouth Coffee" not "visit a local cafe"."""
 
-        # Gemini API endpoint - using gemini-2.0-flash (free tier)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        # Gemini API endpoint - using gemini-2.5-flash (free tier)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         
         payload = {
             "contents": [
