@@ -146,7 +146,7 @@ STYLE:
 - Sound excited and helpful, like texting a friend recommendations
 - Use emojis sparingly (1-2 max in the whole response)
 
-FORMAT - Use EXACTLY this structure:
+FORMAT - Use EXACTLY this structure (do not add introductory text like "Hey Friend!" or "Here is your plan"):
 * **☀️ Morning:** [Specific activity at a REAL named place]. [Why it's great + weather consideration]
 
 * **🍽️ Midday:** [Lunch recommendation at REAL restaurant name]. [What to try there]
@@ -157,15 +157,18 @@ FORMAT - Use EXACTLY this structure:
 
 * **💡 Local Tip:** [One insider secret about {location_name}]
 
+* **⚠️ Alert:** [If there are security/traffic alerts, summarize the key warning here briefly]
+
 REQUIREMENTS:
-1. Name REAL specific places in {location_name} (actual restaurant names, real landmarks, specific neighborhoods)
-2. Consider the {temp}°C {condition} weather - suggest what to wear briefly
-3. Keep each point to 1-2 sentences max
-4. Sound like a friendly local, not a tour guide
-5. If news mentions events/issues, weave them in naturally
-6. STRICTLY ADHERE to the PROFILE guidelines above.
-7. **CRITICAL - TRAFFIC/EMERGENCY ALERTS**: If any alerts are shown above:
-   - For HIGH PRIORITY (🚨) emergencies: WARN the user first, suggest avoiding affected areas, and modify plans to steer clear
+1. Start DIRECTLY with the first bullet point (* **☀️ Morning:**). Do not write an intro paragraph.
+2. Name REAL specific places in {location_name} (actual restaurant names, real landmarks, specific neighborhoods)
+3. Consider the {temp}°C {condition} weather - suggest what to wear briefly
+4. Keep each point to 1-2 sentences max
+5. Sound like a friendly local, not a tour guide
+6. If news mentions events/issues, weave them in naturally
+7. STRICTLY ADHERE to the PROFILE guidelines above.
+8. **CRITICAL - TRAFFIC/EMERGENCY ALERTS**: If any alerts are shown above:
+   - For HIGH PRIORITY (🚨) emergencies: WARN the user first in the Alert section, suggest avoiding affected areas, and modify plans to steer clear
    - For traffic congestion: Suggest alternative routes or times, mention leaving earlier/later
    - For road closures or accidents: Recommend specific detours or alternative destinations
    - Weave safety advice naturally into the morning briefing
